@@ -48,24 +48,23 @@ The experimental pipeline is structured as follows:
 5. **Similarity Measurement**
    - Linear **Centered Kernel Alignment (CKA)** is computed between representations.
    - Pairwise similarities are aggregated using mean and standard deviation.
-
+  
 ---
 
 ## Repository Structure
 
-  src:
-    model.py: CNN architecture
-    train.py: Training loop
-    extract.py: Feature extraction
-    cka.py: CKA implementation
-    utils.py: Utilities (seeds, helpers)
+src:
+  model.py: CNN architecture
+  train.py: Training loop
+  extract.py: Feature extraction
+  cka.py: CKA implementation
+  utils.py: Utilities (seeds, helpers)
 
-  data: Datasets (ignored by git)
-  runs: Training outputs (ignored by git)
+data: Datasets (ignored by git)
+runs: Training outputs (ignored by git)
 
-  README.md: Project description
-  .gitignore: Git ignore rules
-
+README.md: Project description
+.gitignore: Git ignore rules
 
 ---
 
