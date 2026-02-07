@@ -53,6 +53,7 @@ The experimental pipeline is structured as follows:
 
 ## Repository Structure
 
+```yaml
 src:
   model.py: CNN architecture
   train.py: Training loop
@@ -65,6 +66,7 @@ runs: Training outputs (ignored by git)
 
 README.md: Project description
 .gitignore: Git ignore rules
+```
 
 ---
 
