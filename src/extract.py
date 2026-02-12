@@ -23,25 +23,11 @@ def extract_fc1_features(model, dataloader, device="cpu"):
         images = images.to(device)
 
         # Forward up to fc1
-        if hasattr(model, "conv1"):
-            # Forward pass up to fc1: CNN case
-            x = model.conv1(images)
-            x = torch.relu(x)
-            x = model.pool(x)
+        x = model.features_extractor(images)
+        x = model.fc1(x)
 
-            x = model.conv2(x)
-            x = torch.relu(x)
-            x = model.pool(x)
+        all_features.append(x.cpu())
 
-            x = x.view(x.size(0), -1)
-            x = model.fc1(x)
+    features = torch.cat(all_features, dim=0)
 
-        else:
-            # Forward pass up to fc1: MLP case
-            x = images.view(images.size(0), -1) #flatten the input images into a 2D tensor of shape (batch_size, 3*32*32) before feeding them into the fully connected layers of the MLP. This is necessary because the MLP expects a 2D input where each row corresponds to a flattened image in the batch
-            x = model.fc1(x)
-
-        all_features.append(x.cpu()) #append the extracted features to the list all_features
-
-    features = torch.cat(all_features, dim=0) #concatenate all the feature tensors along the first dimension (dim=0) to create a single tensor of shape (N, D), where N is the total number of samples and D is the dimensionality of the features extracted from the fc1 layer
     return features

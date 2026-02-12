@@ -10,11 +10,12 @@ This script orchestrates the full experiment:
 
 import torch
 from torch.utils.data import DataLoader
-from torchvision import datasets, transforms
 
 import wandb
 
 import config
+
+from mnist1d_dataset import load_mnist1d
 
 from model import SimpleCNN, SimpleMLP
 from train import train_model
@@ -84,44 +85,28 @@ def main():
     # --------------------------------------------------
     # 2. Dataset and DataLoader
     # --------------------------------------------------
-    transform = transforms.Compose([  # converting the images to PyTorch tensors using
-        transforms.ToTensor()
-    ])
+    train_loader, test_loader = load_mnist1d(
+    batch_size=config.BATCH_SIZE,
+    n_samples=1000,
+    path="./data/mnist1d_data.pkl"
+)
 
-    train_dataset = datasets.CIFAR10(  # 60,000 32x32 color images in 10 classes, with 6,000 images per class.
-        root=config.DATA_ROOT,                    # The dataset is split into 50,000 training images and 10,000 test images
-        train=True,
-        download=True,
-        transform=transform
-    )
-
-    test_dataset = datasets.CIFAR10(  # dimension test set of 10000 images
-        root=config.DATA_ROOT,
-        train=False,
-        download=True,
-        transform=transform
-    )
-
-    train_loader = DataLoader(  # create a DataLoader for the training dataset, which will handle batching and shuffling of the data during training
-        train_dataset,
-        batch_size=config.BATCH_SIZE,          # The batch size is set to 128, meaning that the model will process 128 images at a time before updating its parameters
-        shuffle=True             # Shuffling is enabled to ensure that the model sees the data in a different order each epoch, which can help with generalization
-    )
-
-    test_loader = DataLoader(
-        test_dataset,
-        batch_size=config.BATCH_SIZE,
-        shuffle=False
-    )
 
     # --------------------------------------------------
     # 3. Train multiple models with different seeds but same architecture, same dataset, same training procedure
     # --------------------------------------------------
 
-    models_to_test = {
-        "cnn": SimpleCNN,
-        "mlp": SimpleMLP
+    models_available = {
+    "cnn": SimpleCNN,
+    "mlp": SimpleMLP
     } #dictionary that maps model names (e.g., "cnn", "mlp") to their corresponding model classes (SimpleCNN, SimpleMLP). By iterating over this dictionary, you can train and evaluate multiple models making it easier to compare their performance and representations
+
+
+    models_to_test = {}
+
+    for name in config.MODELS:
+        models_to_test[name] = models_available[name]
+
 
     all_representations = {} #Basically, this dictionary will store the extracted features (representations) for each model type (e.g., "cnn", "mlp") across different random seeds. The keys of the dictionary are the model names, and the values are lists of feature tensors corresponding to each seed
 
@@ -145,7 +130,7 @@ def main():
             )
 
             set_seed(seed)
-            model = model_class()
+            model = model_class(feature_dim=config.FEATURE_DIM)
             train_model(model, train_loader, num_epochs=config.NUM_EPOCHS, device=device)
 
             phi = extract_fc1_features( #extract the activations from the fc1 layer of the trained model using the test_loader to pass the test images through the model and collect the features

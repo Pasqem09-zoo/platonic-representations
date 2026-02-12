@@ -6,45 +6,57 @@ import torch.nn as nn
 import torch.nn.functional as F #import activation functions like ReLU and others from torch.nn.functional
 
 
-class SimpleCNN(nn.Module): #takes imagines as input and outputs class probabilities. It consists of convolutional layers for feature extraction and fully connected layers for classification
+class SimpleCNN(nn.Module):
+
     """
-    symple CNN.
+    Simple 1D CNN for MNIST1D.
 
     Architecture:
-    - Conv -> ReLU -> MaxPool
-    - Conv -> ReLU -> MaxPool
-    - Fully Connected -> ReLU
-    - Fully Connected (output)
+    - Conv1d (1 → 15, kernel=3, stride=2) -> ReLU
+    - Conv1d (15 → 15, kernel=3, stride=2) -> ReLU
+    - Conv1d (15 → 15, kernel=3, stride=2) -> ReLU
+    - Flatten (15 x 4 = 60)
+    - Fully Connected (60 → feature_dim)   # representation layer (used for CKA)
+    - ReLU
+    - Fully Connected (feature_dim → 10)
+
+    Notes:
+    - Input shape: (batch_size, 1, 40)
+    - Feature dimension (feature_dim) is configurable (e.g. 32 or 64)
+    - CKA representations are extracted from the first fully connected layer.
     """
 
-    def __init__(self, num_classes: int = 10): # CIFAR-10 has 10 classes
-        super().__init__() #call the parent class constructor of nn.Module
+    def __init__(self, feature_dim=32): #feature_dim is the size of the feature layer (the layer we will use for CKA). We set it to 32 for simplicity
+        super().__init__()
 
-        # First convolutional block: takes an image 3x32x32
-        self.conv1 = nn.Conv2d( #take in input images with 3 channels (RGB), apply 16 filters of size 3x3, use padding to maintain spatial dimensions and produce 16 feature maps
-            in_channels=3,    # images (CIFAR-10) have 3 channels (RGB)
-            out_channels=16,
-            kernel_size=3,
-            padding=1
-        ) #16x32x32
+        #convolutional backbone (same structure as professor)
+        self.features_extractor = nn.Sequential(
+            nn.Conv1d(in_channels=1, #input is 1D (grayscale) with 1 channel, output is 15 feature maps, kernel size of 3, stride of 2, no padding. This will reduce the length of the sequence from 40 to 19 (calculated as (40 - 3) / 2 + 1 = 19)
+                      out_channels=15, #number of output channels (feature maps) produced by the convolutional layer. We set it to 15 to have a moderate number of features while keeping the model simple and computationally efficient.
+                      kernel_size=3, #size of the convolutional kernel (filter). A kernel size of 3 means that the convolutional layer will look at 3 consecutive elements in the input sequence at a time to compute each feature map. This is a common choice for capturing local patterns in the data.
+                      stride=2, #the stride of the convolution. A stride of 2 means that the convolutional layer will move the kernel 2 elements at a time when sliding across the input sequence. This effectively reduces the length of the output sequence by half (after accounting for the kernel size)
+                      padding=0 #the amount of zero-padding added to both sides of the input sequence. In this case, we set it to 0
+            ),  # 40 -> 19, output shape: (batch_size, 15, 19)
+            nn.ReLU(), 
 
-        # Second convolutional block: input 16x16x16 (after first conv + pool)
-        self.conv2 = nn.Conv2d(
-            in_channels=16,
-            out_channels=32,
-            kernel_size=3,
-            padding=1
-        ) #32x16x16
+            nn.Conv1d(in_channels=15, out_channels=15, kernel_size=3, stride=2, padding=0), # 19 -> 9, output shape: (batch_size, 15, 9)
+            nn.ReLU(),
 
-        # Pooling layer of max-pool (shared between blocks for first and second conv blocks)
-        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+            nn.Conv1d(in_channels=15, out_channels=15, kernel_size=3, stride=2, padding=0), # 9 -> 4, output shape: (batch_size, 15, 4)
+            nn.ReLU(),
 
-        # Fully connected layers
-        # After two poolings: 32 x 8 x 8
-        self.fc1 = nn.Linear(32 * 8 * 8, 128)
-        self.fc2 = nn.Linear(128, num_classes)
+            nn.Flatten()  # 15 * 4 = 60, output shape: (batch_size, 60)
+        )
+
+        # Feature layer (what we use for CKA)
+        self.fc1 = nn.Linear(15 * 4, feature_dim) #fully connected layer that takes the flattened output of the convolutional backbone (which has 15 feature maps of length 4, resulting in a total of 60 features) and maps it to a lower-dimensional feature space of size feature_dim (e.g., 32)
+
+        # Output layer
+        self.relu = nn.ReLU()
+        self.fc2 = nn.Linear(feature_dim, 10)
 
     def forward(self, x):
+
         """
         Forward pass of the network. 
         Represents the forward pass of the network, defining how the input data flows through the layers to produce 
@@ -52,25 +64,13 @@ class SimpleCNN(nn.Module): #takes imagines as input and outputs class probabili
         and fully connected layers) to produce the final output (class probabilities).
         """
 
-        # Convolutional block 1
-        x = self.conv1(x)
-        x = F.relu(x) #apply ReLU activation function to the output of the first convolutional layer, introducing non-linearity to help the network learn complex patterns in the data
-        x = self.pool(x) #apply max pooling to reduce the spatial dimensions of the feature maps: 16x32x32 -> 16x16x16
+        x = self.features_extractor(x) 
 
-        # Convolutional block 2
-        x = self.conv2(x)
-        x = F.relu(x) #apply ReLU activation function to the output of the second convolutional layer, introducing non-linearity to help the network learn complex patterns in the data
-        x = self.pool(x) #apply max pooling to reduce the spatial dimensions of the feature maps: 32x16x16 -> 32x8x8
+        features = self.fc1(x)
+        x = self.relu(features)
+        out = self.fc2(x)
 
-        # Flatten: 32 × 8 × 8 → 2048. so the output of the second convolutional block is a tensor of shape (batch_size, 32, 8, 8). The line x = x.view(x.size(0), -1) reshapes this tensor into a 2D tensor of shape (batch_size, 2048), where each row corresponds to a flattened feature map for an image in the batch. This flattening is necessary before feeding the data into the fully connected layers, which expect a 2D input.
-        x = x.view(x.size(0), -1) #take all the feature maps and flatten them into a single vector for each image in the batch
-
-        # Fully connected layers
-        x = self.fc1(x) #produces an intermediate representation of size 128. This combines the features in a more compact representation that is useful for classification.
-        x = F.relu(x)
-        x = self.fc2(x) #produces the final output of size num_classes (10 for CIFAR-10), which represents (logits) for each class. These logits can be converted to probabilities using a softmax
-
-        return x
+        return out
 
 
 

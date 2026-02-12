@@ -12,7 +12,7 @@ NUM_EPOCHS = 10
 LEARNING_RATE = 1e-3
 
 # Seeds
-SEEDS = range(5)   # scalable: e.g. range(10)
+SEEDS = [0, 1]   # scalable: e.g. range(10)
 
 # Model
 ARCHITECTURE = "SimpleCNN"
@@ -27,14 +27,14 @@ WANDB_MODE = "online"   # "offline" during development
 USE_MPS = True
 
 # Models to compare
-MODELS = ["cnn", "mlp"]
+MODELS = ["cnn"] # Options: ["cnn"], ["mlp"], ["cnn", "mlp"]
 
 # Model feature dimension (shared)
-FEATURE_DIM = 128
+FEATURE_DIM = 32 #64
 
 # CKA analysis options
-DO_INTRA_MODEL_CKA = False
-DO_INTER_MODEL_CKA = True
+DO_INTRA_MODEL_CKA = True
+DO_INTER_MODEL_CKA = False
 
 # Which models to use for intra-model CKA
 # Options: ["cnn"], ["mlp"], ["cnn", "mlp"]
