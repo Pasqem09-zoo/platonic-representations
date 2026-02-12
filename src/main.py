@@ -10,6 +10,8 @@ This script orchestrates the full experiment:
 
 import torch
 from torch.utils.data import DataLoader
+import numpy as np
+import os
 
 import wandb
 
@@ -59,19 +61,25 @@ def summarize(name, values): #print mean and sd of cka values for a given name (
 
 #compute and summarize CKA values for intra-model comparisons (e.g., CNN vs CNN, MLP vs MLP) and inter-model comparisons (e.g., CNN vs MLP)
 def run_cka_analysis(all_representations):
-    # intra-model CKA
+
+    results = {}
+
     if config.DO_INTRA_MODEL_CKA:
         for model_name in config.INTRA_MODEL_TARGETS:
             if model_name in all_representations:
                 cka_values = compute_intra_cka(all_representations[model_name])
                 summarize(f"CKA intra-{model_name.upper()}", cka_values)
-    # inter-model CKA
+                results[model_name] = cka_values
+
     if config.DO_INTER_MODEL_CKA:
         cka_cross = compute_inter_cka(
             all_representations["cnn"],
             all_representations["mlp"]
         )
         summarize("CKA CNN–MLP", cka_cross)
+        results["inter"] = cka_cross
+
+    return results
 
 
 def main():
@@ -149,7 +157,11 @@ def main():
     # --------------------------------------------------
     # 4. CKA analysis (B3)
     # --------------------------------------------------
-    run_cka_analysis(all_representations)
+    cka_results = run_cka_analysis(all_representations)
+    os.makedirs("results", exist_ok=True)
+
+    for model_name, values in cka_results.items():
+        np.save(f"results/cka_{model_name}.npy", np.array(values))
 
 
 

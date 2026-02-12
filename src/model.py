@@ -79,23 +79,40 @@ class SimpleCNN(nn.Module):
 #------------------------------
 class SimpleMLP(nn.Module):
     """
-    Simple MLP for CIFAR-10.
-    Images are flattened before being passed to the network.
+    Simple MLP for MNIST1D.
+
+    Architecture:
+    - Flatten (40)
+    - Linear (40 → feature_dim)
+    - ReLU
+    - Linear (feature_dim → feature_dim)
+    - ReLU
+    - Linear (feature_dim → 10)
+
+    The first linear layer output (fc1) is used as representation for CKA.
     """
 
-    def __init__(self, input_dim=32*32*3, hidden_dim=128, num_classes=10): #input_dim is the size of the input layer (32x32 pixels with 3 color channels). hidden_dim is the size of the hidden layer, which is set to 128. num_classes is the size of the output layer, which is 10 for CIFAR-10
+    def __init__(self, input_dim=40, feature_dim=32, num_classes=10):
         super().__init__()
 
-        self.fc1 = nn.Linear(input_dim, hidden_dim)
-        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
-        self.fc_out = nn.Linear(hidden_dim, num_classes) #produce logits for each class, which can be converted to probabilities using a softmax function during training or inference
+        self.fc1 = nn.Linear(input_dim, feature_dim)
+        self.fc2 = nn.Linear(feature_dim, feature_dim)
+        self.fc_out = nn.Linear(feature_dim, num_classes)
+
+
+    # method to extract features for CKA analysis. This method allows us to get the activations from the fc1 layer, which is the layer we are interested in for comparing representations across different models using CKA. By defining this method, we can easily extract the features without having to modify the forward pass of the network or add additional hooks.
+    def features_extractor(self, x):
+        # used for CKA extraction
+        x = x.view(x.size(0), -1)
+
+        return x
+
 
     def forward(self, x):
-        # x: (batch_size, 3, 32, 32)
-        x = x.view(x.size(0), -1)  # flatten
-
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
+        # x: (batch_size, 1, 40)
+        x = x.view(x.size(0), -1)  # flatten → (batch, 40)
+        x = torch.relu(self.fc1(x))   # <-- representation layer
+        x = torch.relu(self.fc2(x))
         x = self.fc_out(x)
 
         return x
