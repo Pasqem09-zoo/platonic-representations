@@ -47,17 +47,25 @@ print("p-value:", p_value)
 os.makedirs("results", exist_ok=True)
 
 # --------------------------------------------------
-# 1️⃣ Histogram + Gaussian fit
+# Histogram + Gaussian fit + KDE
 # --------------------------------------------------
 
 plt.figure(figsize=(6,4))
 
-plt.hist(values, bins=20, density=True, alpha=0.6, label="Empirical")
+# Histogram
+plt.hist(values, bins=20, density=True, alpha=0.6, label="Empirical (Histogram)")
 
+# Gaussian fit
 x = np.linspace(min_val, max_val, 300)
-plt.plot(x, stats.norm.pdf(x, mu, sigma), label="Gaussian fit")
+plt.plot(x, stats.norm.pdf(x, mu, sigma),
+         color="red", linewidth=2, label="Gaussian fit")
 
-plt.title(f"Histogram: {filename.replace('.npy','')}")
+# KDE (verde)
+kde = stats.gaussian_kde(values)
+plt.plot(x, kde(x),
+         color="green", linewidth=2, label="KDE")
+
+plt.title(f"Distribution: {filename.replace('.npy','')}")
 plt.xlabel("CKA")
 plt.ylabel("Density")
 plt.legend()
@@ -65,6 +73,7 @@ plt.legend()
 plt.tight_layout()
 plt.savefig(f"results/{filename.replace('.npy','')}_hist.png", dpi=300)
 plt.close()
+
 
 # --------------------------------------------------
 # 2️⃣ Q-Q plot
@@ -76,24 +85,3 @@ plt.title(f"Q-Q Plot: {filename.replace('.npy','')}")
 plt.tight_layout()
 plt.savefig(f"results/{filename.replace('.npy','')}_qq.png", dpi=300)
 plt.close()
-
-# --------------------------------------------------
-# 3️⃣ Kernel Density Estimate (KDE)
-# --------------------------------------------------
-
-plt.figure(figsize=(6,4))
-
-kde = stats.gaussian_kde(values)
-x = np.linspace(min_val, max_val, 300)
-
-plt.plot(x, kde(x), label="KDE")
-plt.title(f"KDE: {filename.replace('.npy','')}")
-plt.xlabel("CKA")
-plt.ylabel("Density")
-plt.legend()
-
-plt.tight_layout()
-plt.savefig(f"results/{filename.replace('.npy','')}_kde.png", dpi=300)
-plt.close()
-
-print("Plots saved in /results folder.")
