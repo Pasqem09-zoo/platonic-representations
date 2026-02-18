@@ -34,7 +34,44 @@ We study whether latent representations converge under controlled training condi
 
 ### Models
 - `SimpleCNN` (1D convolutional network)
+Input (1 x 40)
+    ↓
+Conv1D + ReLU
+(1 → 15, kernel=3, stride=2)
+    ↓
+Conv1D + ReLU
+(15 → 15, kernel=3, stride=2)
+    ↓
+Conv1D + ReLU
+(15 → 15, kernel=3, stride=2)
+    ↓
+Flatten
+(15 x 4 = 60)
+    ↓
+Fully Connected (fc1)  ← representation layer
+(60 → feature_dim)
+    ↓
+ReLU
+    ↓
+Linear Classifier (fc2)
+(feature_dim → 10)
+
+
 - `SimpleMLP` (fully connected network)
+Input (1 x 40)
+    ↓
+Flatten
+(40)
+    ↓
+Linear (fc1) + ReLU  ← representation layer
+(40 → feature_dim)
+    ↓
+Linear (fc2) + ReLU
+(feature_dim → feature_dim)
+    ↓
+Linear Output (fc_out)
+(feature_dim → 10)
+
 
 ### Training Protocol
 - 40 random seeds  
@@ -153,7 +190,5 @@ These results suggest partial representational convergence within architectures,
 ## References
 
 - Huh et al., *The Platonic Representation Hypothesis*, ICML 2024.
-- Kornblith et al., *Similarity of Neural Network Representations Revisited*, ICML 2019.
-- Gretton et al., *Measuring Statistical Dependence with Hilbert-Schmidt Norms*, 2005.
 
 
