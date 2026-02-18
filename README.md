@@ -1,84 +1,98 @@
-# The Platonic Representation Hypothesis
+# The Platonic Representation Hypothesis  
+### A Small-Scale Empirical Study of Representational Convergence
 
-This repository contains a small-scale experimental study on **representational convergence** in neural networks, inspired by the paper  
-**“The Platonic Representation Hypothesis”** (Huh et al., 2024).
+This repository contains a controlled experimental study on **representational convergence** in neural networks, inspired by:
 
-The project is developed as part of the course  
+> Huh et al., *The Platonic Representation Hypothesis*, ICML 2024.
+
+Developed for the course  
 **Computer Vision and Intelligent Media Recognition**.
 
 ---
 
 ## Project Goal
 
-The objective of this project is to empirically investigate the following question:
+We investigate the question:
 
-> *Do neural networks with the same architecture, trained on the same task but with different random initializations, learn similar internal representations?*
+> Do neural networks trained independently on the same task converge toward similar internal representations?
 
-To answer this, we:
-- train multiple identical convolutional neural networks (CNNs) with different random seeds,
-- extract intermediate feature representations from a fixed layer,
-- measure their similarity using **Centered Kernel Alignment (CKA)**,
-- report the mean and standard deviation of similarity across model pairs.
+More formally:
 
-This setup represents a **controlled and simplified version** of the representational convergence phenomena discussed in the reference paper.
+\[
+f_1(x) \approx f_2(x) \;\not\Rightarrow\; \Phi_1(x) \approx \Phi_2(x)
+\]
+
+We study whether latent representations converge under controlled training conditions.
 
 ---
 
-## Method Overview
+## Experimental Setup
 
-The experimental pipeline is structured as follows:
+**Dataset**
+- MNIST1D  
+- 1000 test samples used for representation extraction  
 
-1. **Dataset**
-   - A standard vision dataset (e.g. CIFAR-10) is used.
-   - The same training and test splits are shared across all models.
+**Models**
+- SimpleCNN (1D convolutional network)
+- SimpleMLP (fully connected network)
 
-2. **Model**
-   - A simple convolutional neural network architecture.
-   - All hyperparameters are kept fixed.
-   - Only the random seed is varied between runs.
+**Training Protocol**
+- 40 random seeds
+- 30 epochs
+- Identical optimizer and hyperparameters
+- Feature dimension \( d = 32 \)
+- Representations extracted from layer `fc1`
+- Representations evaluated on the **test set** (unseen data) to measure general representational similarity
 
-3. **Training**
-   - Multiple models are trained independently.
-   - Identical training protocol for all runs.
+---
 
-4. **Representation Extraction**
-   - Activations are extracted from a selected intermediate layer.
-   - A fixed set of input images is used for all models.
+## Methodology
 
-5. **Similarity Measurement**
-   - Linear **Centered Kernel Alignment (CKA)** is computed between representations.
-   - Pairwise similarities are aggregated using mean and standard deviation.
-  
+For each experiment:
+
+1. Train models independently with different seeds.
+2. Extract latent representations:
+   \[
+   \Phi_s(X) \in \mathbb{R}^{n \times d}
+   \]
+3. Compute **Linear Centered Kernel Alignment (CKA)**.
+4. Analyze the full distribution of pairwise similarities:
+   - Mean
+   - Standard deviation
+   - Min / Max
+   - Skewness
+   - Kurtosis
+   - Shapiro–Wilk normality test
+
+---
+
+## Experiments
+
+### 1. Intra-Model (CNN)
+CKA across different seeds of the same CNN architecture.
+
+### 2. Intra-Model (MLP)
+CKA across different seeds of the same MLP architecture.
+
+### 3. Inter-Model (CNN vs MLP)
+CKA across different architectures trained on the same task.
+
+---
+
+## Results
+
+| Experiment | #Seeds | #Pairs | CKA Mean | CKA Std |
+|------------|--------|--------|----------|---------|
+| CNN (intra) | 40 | 780 | 0.9424 | 0.0231 |
+| MLP (intra) | 40 | 780 | 0.9755 | 0.0052 |
+| CNN vs MLP (inter) | 40 | 1600 | 0.7712 | 0.0316 |
+
+**Observations**
+- Intra-model alignment is high → representational stability across random initialization.
+- Inter-model alignment is lower → architecture influences representation geometry.
+- Distributions are concentrated but not perfectly Gaussian (normality rejected).
+
 ---
 
 ## Repository Structure
-
-```yaml
-src:
-  model.py: CNN architecture
-  train.py: Training loop
-  extract.py: Feature extraction
-  cka.py: CKA implementation
-  utils.py: Utilities (seeds, helpers)
-
-data: Datasets (ignored by git)
-runs: Training outputs (ignored by git)
-
-README.md: Project description
-.gitignore: Git ignore rules
-```
-
----
-
-## Reference
-
-Minyoung Huh, Brian Cheung, Tongzhou Wang, Phillip Isola  
-**The Platonic Representation Hypothesis**, ICML 2024.
-
----
-
-## Notes
-
-- This repository is intended for **educational and experimental purposes**.
-- The focus is on clarity, reproducibility, and conceptual understanding rather than large-scale performance.
 
