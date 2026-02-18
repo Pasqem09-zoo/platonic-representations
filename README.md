@@ -44,6 +44,55 @@ We study whether latent representations converge under controlled training condi
 - Representations extracted from layer `fc1`
 - Representations evaluated on the **test set** (unseen data) to measure general representational similarity
 
+**project structure**
+.
+├── model.py
+│   ├── SimpleCNN
+│   │   ├── 1D convolutional backbone (3 Conv1d + ReLU)
+│   │   ├── fc1 → representation layer (used for CKA)
+│   │   └── fc2 → classification layer (10 classes)
+│   └── SimpleMLP
+│       ├── fc1 → representation layer (used for CKA)
+│       ├── fc2 → hidden layer
+│       └── fc_out → classification layer
+│
+├── train.py
+│   └── Training loop (multi-seed experiments)
+│
+├── extract.py
+│   └── Feature extraction from fc1 layer
+│
+├── cka.py
+│   ├── Kernel computation (linear kernel)
+│   ├── Centering operation
+│   ├── HSIC computation
+│   └── CKA normalization
+│
+├── analyze_cka.py
+│   ├── Pairwise CKA across seeds
+│   ├── Statistical analysis (mean, std, skew, kurtosis)
+│   └── Normality tests (Shapiro-Wilk)
+│
+├── mnist1d_dataset.py
+│   └── MNIST-1D dataset loading and preprocessing
+│
+├── config.py
+│   └── Experiment hyperparameters (batch size, seeds, feature_dim, etc.)
+│
+├── utils.py
+│   ├── Seed control utilities
+│   └── Helper functions
+│
+├── main.py
+│   └── Entry point: full pipeline
+│       ├── Train models (different random seeds)
+│       ├── Extract representations
+│       ├── Compute CKA
+│       └── Aggregate statistics
+│
+└── README.md
+
+
 ---
 
 ## Methodology
